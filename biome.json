@@ -1,0 +1,6 @@
+{
+	"files": {
+		"ignoreUnknown": false,
+		"ignore": ["node_modules", ".next", ".vercel", ".turbo"]
+	}
+}
