@@ -2,12 +2,12 @@
 
 import { useUser } from "@clerk/nextjs";
 import { Bell, Home, Mail, User, Plus } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 
 export default function HomePage() {
   const { user, isLoaded, isSignedIn } = useUser();
-  console.log(user);
 
   useEffect(() => {
     const saveUserToDatabase = async () => {
@@ -52,9 +52,11 @@ export default function HomePage() {
           {/* Create Post Button */}
           <div className='bg-white dark:bg-gray-800 rounded-xl shadow p-4 flex items-center space-x-4'>
             <div className='h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'>
-              <img
-                src='/placeholder.svg?height=40&width=40'
+              <Image
+                src='/file.svg'
                 alt='User avatar'
+                width='100'
+                height='100'
               />
             </div>
             <Link
@@ -76,9 +78,11 @@ export default function HomePage() {
                   href={`/profile/user${post}`}
                   className='h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'
                 >
-                  <img
-                    src={`/placeholder.svg?height=40&width=40&text=User${post}`}
+                  <Image
+                    src='/file.svg'
                     alt='User avatar'
+                    width='100'
+                    height='100'
                   />
                 </Link>
                 <div className='flex-1'>
@@ -113,9 +117,11 @@ export default function HomePage() {
 
                     {post === 1 && (
                       <div className='mt-3 rounded-xl overflow-hidden'>
-                        <img
-                          src='/placeholder.svg?height=300&width=500&text=Post+Image'
+                        <Image
+                          src='/file.svg'
                           alt='投稿画像'
+                          width='100'
+                          height='100'
                           className='w-full h-auto'
                         />
                       </div>
