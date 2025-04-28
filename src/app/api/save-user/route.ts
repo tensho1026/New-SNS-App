@@ -8,7 +8,7 @@ app.post("/api/save-user", async (c) => {
   if (!body?.clerkId) return c.json({ error: "Missing clerkId" }, 400);
 
   const { error } = await supabase.from("User").upsert({
-    clerkId: body.clerkId,
+    id: body.clerkId,
     username: body.username,
     imageUrl: body.imageUrl,
   });
