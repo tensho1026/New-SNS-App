@@ -1,20 +1,32 @@
 import { Hono } from "hono";
-import { supabase } from "@/supabase/supabase.config";
+import { prisma } from "@/lib/prisma"; // Prisma Client
 
 const app = new Hono();
 
 app.post("/api/save-user", async (c) => {
   const body = await c.req.json();
+
   if (!body?.clerkId) return c.json({ error: "Missing clerkId" }, 400);
 
-  const { error } = await supabase.from("User").upsert({
-    id: body.clerkId,
-    username: body.username,
-    imageUrl: body.imageUrl,
-  });
+  try {
+    await prisma.user.upsert({
+      where: { id: body.clerkId },
+      update: {
+        username: body.username,
+        imageUrl: body.imageUrl,
+      },
+      create: {
+        id: body.clerkId,
+        username: body.username,
+        imageUrl: body.imageUrl,
+      },
+    });
 
-  if (error) return c.json({ error: error.message }, 500);
-  return c.json({ message: "User saved" }, 200);
+    return c.json({ message: "User saved" }, 200);
+  } catch (err) {
+    console.error("❌ Prisma Error:", err);
+    return c.json({ error: "Internal Server Error" }, 500);
+  }
 });
 
 export async function POST(req: Request) {
