@@ -83,13 +83,18 @@ export default function CreatePostPage() {
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className='max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4'>
             <div className='flex space-x-4'>
-              <div className='h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'>
-                <Image
-                  src='/next.svg'
-                  alt='User avatar'
-                  width={100}
-                  height={100}
-                />
+              <div className='h-12 w-12 rounded-full  overflow-hidden'>
+                {user?.imageUrl ? (
+                  <Image
+                    src={user.imageUrl}
+                    alt='ユーザー画像'
+                    width={40}
+                    height={40}
+                    className='rounded-full text-center'
+                  />
+                ) : (
+                  <div className='h-10 w-10 rounded-full bg-gray-300' />
+                )}
               </div>
               <div className='flex-1'>
                 <div className='mb-4'>
