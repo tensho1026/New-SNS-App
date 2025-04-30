@@ -51,9 +51,6 @@ export default function HomePage() {
     };
     getPosts();
   }, []);
-  useEffect(() => {
-    console.log("✅ postsが取得されました:", posts);
-  }, [posts]);
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
@@ -61,13 +58,16 @@ export default function HomePage() {
 
       <header className='sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'>
         <div className='container mx-auto px-4 py-3 flex items-center justify-between'>
-          <UserButton />
+          <div className='scale-120'>
+            <UserButton />
+          </div>
+
           <Link href='/' className='text-xl font-bold text-blue-500'>
             SocialApp
           </Link>
           <nav className='hidden md:flex items-center space-x-4'>
             <Link
-              href='/profile/user123'
+              href={`/profile/${user?.id}`}
               className='p-2 text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400'
             >
               <User className='h-6 w-6' />
@@ -83,7 +83,7 @@ export default function HomePage() {
           <div className='bg-white rounded-xl shadow p-4 flex items-center space-x-4'>
             <Link
               href='/create-post'
-              className='flex items-center space-x-4 group'
+              className='flex items-center space-x-4 group w-full'
             >
               <div className='h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 group-hover:bg-blue-600 transition'>
                 <Plus size={20} className='text-white' />
@@ -115,7 +115,7 @@ export default function HomePage() {
                 <div className='flex-1'>
                   <div className='flex items-center'>
                     <Link
-                      href={`/profile/${post.authorId}`}
+                      href={`/profile/${post.user.id}`}
                       className='font-bold text-gray-900 dark:text-white hover:underline'
                     >
                       {post.user.username}
