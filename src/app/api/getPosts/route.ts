@@ -28,7 +28,10 @@ app.get("/api/getPosts", async (c) => {
           },
         },
         _count: {
-          select: { comment: true },
+          select: {
+            comment: true,
+            like: true,
+          },
         },
       },
     });
