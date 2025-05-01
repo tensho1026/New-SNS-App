@@ -74,7 +74,6 @@ export default function CreatePostPage() {
               新規投稿
             </h1>
           </div>
-          {/* 投稿ボタンはformの外に置かず、formの中にtype="submit"で置く */}
         </div>
       </header>
 
