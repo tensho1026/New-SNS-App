@@ -1,9 +1,13 @@
 "use client";
+import { CreateCommentInput, createCommentSchema } from "@/lib/schemas/comment";
+import { useUser } from "@clerk/nextjs";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Heart, MessageCircle, MoreHorizontal } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 type Post = {
   id: string;
@@ -24,6 +28,29 @@ export default function PostDetailPage() {
 
   const params = useParams();
   const postId = params?.postId as string;
+  const { user } = useUser();
+  type CreateCommentFormInput = Omit<CreateCommentInput, "postId">;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<CreateCommentFormInput>({
+    resolver: zodResolver(createCommentSchema.omit({ postId: true })),
+  });
+  const onSubmit = async (data: CreateCommentFormInput) => {
+    await fetch("/api/create-comment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        postId,
+        clerkId: user?.id,
+      }),
+    });
+    reset();
+  };
 
   useEffect(() => {
     if (!postId) return;
@@ -78,10 +105,11 @@ export default function PostDetailPage() {
                     <Link
                       href='/profile/user1'
                       className='font-bold text-gray-900 dark:text-white hover:underline'
-                    ></Link>
-                    <div className='text-sm text-gray-500 dark:text-gray-400'>
-                      <p>{post?.user.username}</p>
-                    </div>
+                    >
+                      <div className='text-sm text-gray-500 dark:text-gray-400'>
+                        <p>{post?.user.username}</p>
+                      </div>
+                    </Link>
                   </div>
                   <button className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700'>
                     <MoreHorizontal className='h-5 w-5 text-gray-500 dark:text-gray-400' />
@@ -132,26 +160,39 @@ export default function PostDetailPage() {
 
             {/* Comment Input */}
             <div className='flex space-x-3 mb-6'>
-              <div className='h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'>
-                <Image
-                  src='/vercel.svg'
-                  alt='User avatar'
-                  width={100}
-                  height={100}
-                />
-              </div>
-              <div className='flex-1'>
-                <textarea
-                  className='w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500'
-                  placeholder='コメントを追加...'
-                  rows={2}
-                ></textarea>
-                <div className='flex justify-end mt-2'>
-                  <button className='px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-full text-sm'>
-                    返信
-                  </button>
+              <form onSubmit={handleSubmit(onSubmit)} className='mb-6 w-full'>
+                <div className='flex space-x-3'>
+                  <div className='h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'>
+                    <Image
+                      src={user?.imageUrl || "/shoki.png"}
+                      alt='User avatar'
+                      width={100}
+                      height={100}
+                    />
+                  </div>
+                  <div className='flex-1'>
+                    <textarea
+                      {...register("content")}
+                      className='w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500'
+                      placeholder='コメントを追加...'
+                      rows={2}
+                    />
+                    {errors.content && (
+                      <p className='text-red-500 text-sm mt-1'>
+                        {errors.content.message}
+                      </p>
+                    )}
+                    <div className='flex justify-end mt-2'>
+                      <button
+                        type='submit'
+                        className='px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-full text-sm'
+                      >
+                        返信
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </form>
             </div>
 
             {/* Comment List */}
