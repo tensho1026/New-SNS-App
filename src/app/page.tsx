@@ -18,6 +18,7 @@ type Post = {
     username: string;
     imageUrl: string;
   };
+  _count: { comment: number };
 };
 
 export default function HomePage() {
@@ -150,10 +151,12 @@ export default function HomePage() {
                     </button>
 
                     {/* コメントボタン */}
-                    <button className='flex items-center space-x-1 hover:text-blue-500 transition'>
-                      <MessageCircle size={18} />
-                      <span>0</span>
-                    </button>
+                    <Link href={`/post/${post.id}`}>
+                      <button className='flex items-center space-x-1 hover:text-blue-500 transition'>
+                        <MessageCircle size={18} />
+                        <span>{post._count.comment}</span>
+                      </button>
+                    </Link>
                   </div>
                 </div>
               </div>

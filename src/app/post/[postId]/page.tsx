@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useCallback } from "react";
 
 type Post = {
   id: string;
@@ -23,8 +24,21 @@ type Post = {
   };
 };
 
+type Comment = {
+  id: string;
+  authorId: string;
+  content: string;
+  postId: string;
+  createdAt: string;
+  author: {
+    id: string;
+    username: string;
+    imageUrl: string;
+  };
+};
 export default function PostDetailPage() {
   const [post, setPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   const params = useParams();
   const postId = params?.postId as string;
@@ -39,6 +53,7 @@ export default function PostDetailPage() {
   } = useForm<CreateCommentFormInput>({
     resolver: zodResolver(createCommentSchema.omit({ postId: true })),
   });
+
   const onSubmit = async (data: CreateCommentFormInput) => {
     await fetch("/api/create-comment", {
       method: "POST",
@@ -50,20 +65,28 @@ export default function PostDetailPage() {
       }),
     });
     reset();
+    await fetchComment();
   };
 
   useEffect(() => {
-    if (!postId) return;
-
     const fetchPost = async () => {
       const res = await fetch(`/api/getPostById/${postId}`);
-      if (!res.ok) throw new Error("投稿取得に失敗しました");
       const data = await res.json();
       setPost(data);
     };
 
     fetchPost();
   }, [postId]);
+
+  const fetchComment = useCallback(async () => {
+    const res = await fetch(`/api/getComments/${postId}`);
+    const data = await res.json();
+    setComments(data);
+  }, [postId]);
+
+  useEffect(() => {
+    fetchComment();
+  }, [fetchComment]);
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
@@ -144,7 +167,7 @@ export default function PostDetailPage() {
                     </button>
                     <button className='flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'>
                       <MessageCircle className='h-5 w-5 mr-1' />
-                      <span>12</span>
+                      <span>{comments.length}</span>
                     </button>
                   </div>
                 </div>
@@ -197,17 +220,17 @@ export default function PostDetailPage() {
 
             {/* Comment List */}
             <div className='space-y-4'>
-              {[1].map((comment) => (
+              {comments.map((comment) => (
                 <div
-                  key={comment}
+                  key={comment.id}
                   className='flex space-x-3 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0'
                 >
                   <Link
-                    href={`/profile/commenter${comment}`}
+                    href={`/profile/${comment.author.id}`}
                     className='h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'
                   >
                     <Image
-                      src='/vercel.svg'
+                      src={comment.author.imageUrl}
                       alt='User avatar'
                       width={100}
                       height={100}
@@ -216,36 +239,23 @@ export default function PostDetailPage() {
                   <div className='flex-1'>
                     <div className='flex items-center'>
                       <Link
-                        href={`/profile/commenter${comment}`}
-                        className='font-bold text-gray-900 dark:text-white hover:underline'
+                        href={`/profile/${comment.author.id}`}
+                        className='font-bold text-gray-500 dark:text-white hover:underline'
                       >
-                        コメントユーザー{comment}
+                        {comment.author.username}
                       </Link>
 
                       <span className='mx-1 text-gray-500 dark:text-gray-400'>
                         ·
                       </span>
                       <span className='text-sm text-gray-500 dark:text-gray-400'>
-                        {comment}時間前
+                        {comment.createdAt}
                       </span>
                     </div>
 
                     <p className='mt-1 text-gray-800 dark:text-gray-200'>
-                      これはコメント{comment}
-                      です。投稿に対するコメントがここに表示されます。
-                      {comment === 2 &&
-                        " 長めのコメント内容もこのように表示されます。"}
+                      {comment.content}
                     </p>
-
-                    <div className='mt-2 flex space-x-4'>
-                      <button className='flex items-center text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'>
-                        <Heart className='h-4 w-4 mr-1' />
-                        <span className='text-sm'>{comment * 3}</span>
-                      </button>
-                      <button className='text-sm text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'>
-                        返信
-                      </button>
-                    </div>
                   </div>
                 </div>
               ))}
