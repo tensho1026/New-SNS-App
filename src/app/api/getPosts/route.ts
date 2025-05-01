@@ -1,12 +1,11 @@
 import { Hono } from "hono";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server"; 
+import { auth } from "@clerk/nextjs/server";
 const app = new Hono();
 
 app.get("/api/getPosts", async (c) => {
   try {
     const { userId } = await auth();
-
 
     if (!userId) {
       return c.json({ error: "Unauthorized" }, 401);
@@ -27,6 +26,9 @@ app.get("/api/getPosts", async (c) => {
             username: true,
             imageUrl: true,
           },
+        },
+        _count: {
+          select: { comment: true },
         },
       },
     });
