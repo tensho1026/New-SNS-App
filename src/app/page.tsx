@@ -18,12 +18,27 @@ type Post = {
     username: string;
     imageUrl: string;
   };
-  _count: { comment: number };
+  _count: {
+    comment: number;
+    like: number;
+  };
 };
 
 export default function HomePage() {
   const { user, isLoaded, isSignedIn } = useUser();
   const [posts, setPosts] = useState<Post[]>([]);
+
+  const toggleLike = async (postId: string) => {
+    await fetch("/api/toggleLike", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, clerkId: user?.id }),
+    });
+
+    const updatedPosts = await fetch("/api/getPosts");
+    const updatedData = await updatedPosts.json();
+    setPosts(updatedData);
+  };
 
   useEffect(() => {
     const saveUserToDatabase = async () => {
@@ -145,9 +160,12 @@ export default function HomePage() {
                   </Link>
                   <div className='mt-4 flex space-x-6 text-gray-500 dark:text-gray-400 text-sm'>
                     {/* いいねボタン */}
-                    <button className='flex items-center space-x-1 hover:text-red-500 transition'>
+                    <button
+                      className='flex items-center space-x-1 hover:text-red-500 transition'
+                      onClick={() => toggleLike(post.id)}
+                    >
                       <Heart size={18} />
-                      <span>0</span>
+                      <span>{post._count.like}</span>
                     </button>
 
                     {/* コメントボタン */}

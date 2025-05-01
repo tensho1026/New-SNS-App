@@ -2,7 +2,7 @@
 import { CreateCommentInput, createCommentSchema } from "@/lib/schemas/comment";
 import { useUser } from "@clerk/nextjs";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Heart, MessageCircle, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -39,6 +39,7 @@ type Comment = {
 export default function PostDetailPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [likeCount, setLikeCount] = useState<number>(0);
 
   const params = useParams();
   const postId = params?.postId as string;
@@ -53,6 +54,27 @@ export default function PostDetailPage() {
   } = useForm<CreateCommentFormInput>({
     resolver: zodResolver(createCommentSchema.omit({ postId: true })),
   });
+  const toggleLike = async () => {
+    const res = await fetch("/api/toggleLike", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, clerkId: user?.id }),
+    });
+    const data = await res.json();
+
+    if (data.message === "Like Added") {
+      setLikeCount((prev) => prev + 1);
+    } else {
+      setLikeCount((prev) => prev - 1);
+    }
+    getLikes();
+  };
+
+  const getLikes = useCallback(async () => {
+    const res = await fetch(`/api/getLike/${postId}`);
+    const data = await res.json();
+    setLikeCount(data.count);
+  }, [postId]);
 
   const onSubmit = async (data: CreateCommentFormInput) => {
     await fetch("/api/create-comment", {
@@ -76,7 +98,8 @@ export default function PostDetailPage() {
     };
 
     fetchPost();
-  }, [postId]);
+    getLikes();
+  }, [postId, getLikes]);
 
   const fetchComment = useCallback(async () => {
     const res = await fetch(`/api/getComments/${postId}`);
@@ -134,9 +157,6 @@ export default function PostDetailPage() {
                       </div>
                     </Link>
                   </div>
-                  <button className='p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700'>
-                    <MoreHorizontal className='h-5 w-5 text-gray-500 dark:text-gray-400' />
-                  </button>
                 </div>
 
                 <p className='mt-2 text-gray-800 dark:text-gray-200 text-lg'>
@@ -161,9 +181,14 @@ export default function PostDetailPage() {
 
                 <div className='flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
                   <div className='flex space-x-10'>
-                    <button className='flex items-center text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'>
+                    <button
+                      className='flex items-center text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
+                      onClick={() => {
+                        toggleLike();
+                      }}
+                    >
                       <Heart className='h-5 w-5 mr-1' />
-                      <span>42</span>
+                      <span>{likeCount}</span>
                     </button>
                     <button className='flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'>
                       <MessageCircle className='h-5 w-5 mr-1' />
