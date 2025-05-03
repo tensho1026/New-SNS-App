@@ -45,6 +45,18 @@ type UserInfo = {
       like: number;
       comment: number;
     };
+
+    comment: {
+      id: string;
+      postId: string;
+      authorId: string;
+      content: string;
+      createdAt: string;
+      author: {
+        username: string;
+        imageUrl: string;
+      };
+    }[];
   }[];
 
   like: {
@@ -60,6 +72,10 @@ type UserInfo = {
     authorId: string;
     content: string;
     createdAt: string;
+    author: {
+      username: string;
+      imageUrl: string;
+    };
   }[];
 
   _count: {
@@ -68,18 +84,10 @@ type UserInfo = {
   };
 };
 
-type CommentType = {
-  id: string;
-  postId: string;
-  authorId: string;
-  content: string;
-  createdAt: string;
-};
 export default function ProfilePage() {
   const [open, setOpen] = useState(false);
   const [userinfo, setUserInfo] = useState<UserInfo>();
   const [openPostId, setOpenPostId] = useState<string | null>(null);
-  const [comments, setComments] = useState<CommentType[]>([]);
 
   const [visibleCommentPostId, setVisibleCommentPostId] = useState<
     string | null
@@ -168,12 +176,6 @@ export default function ProfilePage() {
     }
   };
 
-  const fetchComment = useCallback(async (postId: string) => {
-    const res = await fetch(`/api/getComments/${postId}`);
-    const data = await res.json();
-    setComments(data);
-  }, []);
-
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
       <header className='sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'>
@@ -229,13 +231,13 @@ export default function ProfilePage() {
                                 <div className='w-24 h-24 md:w-32 md:h-32 '>
                                   <Image
                                     src={previewUrl || "/shoki.png"}
-                                    width={100}
-                                    height={100}
+                                    width={90}
+                                    height={90}
                                     alt='プロフィール画像'
-                                    className='rounded-full object-cover'
+                                    className='rounded-full object-cover w-full h-full'
                                   />
                                 </div>
-                                <label className='absolute bottom-0 right-0 rounded-full w-8 h-8 bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer'>
+                                <label className='absolute bottom-[-10px] right-[-20px] rounded-full w-8 h-8 bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer'>
                                   <ImageIcon className='h-4 w-4 text-gray-700' />
                                   <input
                                     type='file'
@@ -318,6 +320,7 @@ export default function ProfilePage() {
                       alt='User avatar'
                       width={100}
                       height={100}
+                      className='w-full h-full object-cover'
                     />
                   </div>
                   <div className='flex-1 relative'>
@@ -396,7 +399,6 @@ export default function ProfilePage() {
                             // もう一度押したら閉じる
                             setVisibleCommentPostId(null);
                           } else {
-                            await fetchComment(post.id);
                             setVisibleCommentPostId(post.id);
                           }
                         }}
@@ -407,18 +409,30 @@ export default function ProfilePage() {
                     </div>
                     {visibleCommentPostId === post.id && (
                       <div className='mt-3 border-t pt-3 space-y-2 text-sm text-gray-800 dark:text-gray-200'>
-                        {comments.length === 0 ? (
+                        {post.comment?.length === 0 ? (
                           <p>コメントはまだありません</p>
                         ) : (
-                          comments.map((comment) => (
+                          post.comment?.map((comment) => (
                             <div
                               key={comment.id}
-                              className='bg-gray-100 dark:bg-gray-700 p-2 rounded'
+                              className='bg-gray-50 dark:bg-gray-700 p-2 rounded flex items-start space-x-3'
                             >
-                              <p>{comment.content}</p>
-                              <span className='text-xs text-gray-500'>
-                                {new Date(comment.createdAt).toLocaleString()}
-                              </span>
+                              <Image
+                                src={comment.author.imageUrl || "/shoki.png"}
+                                alt='アイコン'
+                                width={32}
+                                height={32}
+                                className='rounded-full object-cover w-8 h-8'
+                              />
+                              <div>
+                                <div className='font-bold text-sm'>
+                                  {comment.author.username}
+                                </div>
+                                <p>{comment.content}</p>
+                                <span className='text-xs text-gray-500'>
+                                  {new Date(comment.createdAt).toLocaleString()}
+                                </span>
+                              </div>
                             </div>
                           ))
                         )}

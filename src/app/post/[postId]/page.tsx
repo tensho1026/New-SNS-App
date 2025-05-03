@@ -10,6 +10,46 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCallback } from "react";
 
+type UserInfo = {
+  username: string;
+  myself: string;
+  imageUrl: string;
+
+  posts: {
+    id: string;
+    authorId: string;
+    content: string;
+    image: string | null;
+    createdAt: string;
+    updateAt: string;
+
+    _count: {
+      like: number;
+      comment: number;
+    };
+  }[];
+
+  like: {
+    id: string;
+    postId: string;
+    authorId: string;
+    createdAt: string;
+  }[];
+
+  comment: {
+    id: string;
+    postId: string;
+    authorId: string;
+    content: string;
+    createdAt: string;
+  }[];
+
+  _count: {
+    posts: number;
+    like: number;
+  };
+};
+
 type Post = {
   id: string;
   authorId: string;
@@ -40,6 +80,7 @@ export default function PostDetailPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [likeCount, setLikeCount] = useState<number>(0);
+  const [myUserInfo, setMyUserInfo] = useState<UserInfo | null>(null);
 
   const params = useParams();
   const postId = params?.postId as string;
@@ -110,6 +151,17 @@ export default function PostDetailPage() {
   useEffect(() => {
     fetchComment();
   }, [fetchComment]);
+
+  const fetchMyUserInfo = useCallback(async () => {
+    if (!user?.id) return;
+
+    const res = await fetch(`/api/getUserInfo/${user.id}`);
+    const data = await res.json();
+    setMyUserInfo(data); // useState で myUserInfo を定義
+  }, [user?.id]);
+  useEffect(() => {
+    fetchMyUserInfo();
+  }, [fetchMyUserInfo]);
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
@@ -212,10 +264,11 @@ export default function PostDetailPage() {
                 <div className='flex space-x-3'>
                   <div className='h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'>
                     <Image
-                      src={user?.imageUrl || "/shoki.png"}
+                      src={myUserInfo?.imageUrl || "/shoki.png"}
                       alt='User avatar'
                       width={100}
                       height={100}
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className='flex-1'>
@@ -259,6 +312,7 @@ export default function PostDetailPage() {
                       alt='User avatar'
                       width={100}
                       height={100}
+                      className='w-full h-full object-cover'
                     />
                   </Link>
                   <div className='flex-1'>
