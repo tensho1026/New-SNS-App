@@ -11,6 +11,24 @@ app.get("/api/getPostById/:postId", async (c) => {
       where: { id: postId },
       include: {
         user: true,
+        like: true, 
+        comment: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            like: true,
+            comment: true,
+          },
+        },
       },
     });
 
