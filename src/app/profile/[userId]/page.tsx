@@ -27,6 +27,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CreateProfileInput, createProfileSchema } from "@/lib/schemas/prifile";
 import { uploadImage } from "@/lib/uploadImage";
+import { useImagePreview } from "@/lib/useImagePreview";
 
 type UserInfo = {
   username: string;
@@ -92,11 +93,16 @@ export default function ProfilePage() {
   const [visibleCommentPostId, setVisibleCommentPostId] = useState<
     string | null
   >(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>();
-  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const params = useParams();
   const userId = params?.userId as string;
+  const {
+    previewUrl,
+    imageFile,
+    handleImageChange,
+    resetImage,
+    setPreviewUrl,
+  } = useImagePreview();
 
   const {
     register,
@@ -124,24 +130,14 @@ export default function ProfilePage() {
     await getUserInfo();
 
     reset();
-    setImageFile(null);
-    setPreviewUrl(null);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      setImageFile(file);
-    }
+    resetImage();
   };
 
   useEffect(() => {
     if (userinfo?.imageUrl && !previewUrl) {
       setPreviewUrl(userinfo.imageUrl);
     }
-  }, [userinfo, previewUrl]);
+  }, [userinfo, previewUrl, setPreviewUrl]);
 
   const getUserInfo = useCallback(async () => {
     const res = await fetch(`/api/getUserInfo/${userId}`);
