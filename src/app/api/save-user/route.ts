@@ -9,13 +9,16 @@ app.post("/api/save-user", async (c) => {
   if (!body?.clerkId) return c.json({ error: "Missing clerkId" }, 400);
 
   try {
-    await prisma.user.upsert({
+    const existingUser = await prisma.user.findUnique({
       where: { id: body.clerkId },
-      update: {
-        username: body.username,
-        imageUrl: body.imageUrl,
-      },
-      create: {
+    });
+
+    if (existingUser) {
+      return c.json({ message: "User already exists" }, 200);
+    }
+
+    await prisma.user.create({
+      data: {
         id: body.clerkId,
         username: body.username,
         imageUrl: body.imageUrl,

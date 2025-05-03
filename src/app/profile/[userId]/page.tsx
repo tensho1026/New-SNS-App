@@ -23,6 +23,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CreateProfileInput, createProfileSchema } from "@/lib/schemas/prifile";
+import { uploadImage } from "@/lib/uploadImage";
 
 type UserInfo = {
   username: string;
@@ -41,6 +45,18 @@ type UserInfo = {
       like: number;
       comment: number;
     };
+
+    comment: {
+      id: string;
+      postId: string;
+      authorId: string;
+      content: string;
+      createdAt: string;
+      author: {
+        username: string;
+        imageUrl: string;
+      };
+    }[];
   }[];
 
   like: {
@@ -56,6 +72,10 @@ type UserInfo = {
     authorId: string;
     content: string;
     createdAt: string;
+    author: {
+      username: string;
+      imageUrl: string;
+    };
   }[];
 
   _count: {
@@ -64,25 +84,64 @@ type UserInfo = {
   };
 };
 
-type CommentType = {
-  id: string;
-  postId: string;
-  authorId: string;
-  content: string;
-  createdAt: string;
-};
 export default function ProfilePage() {
   const [open, setOpen] = useState(false);
   const [userinfo, setUserInfo] = useState<UserInfo>();
   const [openPostId, setOpenPostId] = useState<string | null>(null);
-  const [comments, setComments] = useState<CommentType[]>([]);
 
   const [visibleCommentPostId, setVisibleCommentPostId] = useState<
     string | null
   >(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>();
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const params = useParams();
   const userId = params?.userId as string;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<CreateProfileInput>({
+    resolver: zodResolver(createProfileSchema),
+  });
+
+  const onSubmit = async (data: CreateProfileInput) => {
+    let imageUrl: string | null = null;
+
+    if (imageFile) {
+      imageUrl = await uploadImage(imageFile);
+    }
+    await fetch(`/api/create-profile/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        imageUrl,
+      }),
+    });
+    await getUserInfo();
+
+    reset();
+    setImageFile(null);
+    setPreviewUrl(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setImageFile(file);
+    }
+  };
+
+  useEffect(() => {
+    if (userinfo?.imageUrl && !previewUrl) {
+      setPreviewUrl(userinfo.imageUrl);
+    }
+  }, [userinfo, previewUrl]);
 
   const getUserInfo = useCallback(async () => {
     const res = await fetch(`/api/getUserInfo/${userId}`);
@@ -97,12 +156,11 @@ export default function ProfilePage() {
     const res = await fetch("/api/toggleLike", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId, clerkId: userId }), // ← userId はすでに useParams から取得済み
+      body: JSON.stringify({ postId, clerkId: userId }),
     });
 
     const data = await res.json();
 
-    // 反映のために再取得
     if (data.message === "Like Added" || data.message === "Like Removed") {
       getUserInfo();
     }
@@ -117,12 +175,6 @@ export default function ProfilePage() {
       console.error("削除に失敗");
     }
   };
-
-  const fetchComment = useCallback(async (postId: string) => {
-    const res = await fetch(`/api/getComments/${postId}`);
-    const data = await res.json();
-    setComments(data);
-  }, []);
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
@@ -166,7 +218,7 @@ export default function ProfilePage() {
                         </Button>
                       </DialogTrigger>
                       <DialogContent className='sm:max-w-[425px]'>
-                        <form>
+                        <form onSubmit={handleSubmit(onSubmit)}>
                           <DialogHeader>
                             <DialogTitle>プロフィール編集</DialogTitle>
                             <DialogDescription>
@@ -176,22 +228,24 @@ export default function ProfilePage() {
                           <div className='grid gap-4 py-4'>
                             <div className='flex justify-center'>
                               <div className='relative'>
-                                <div className='w-24 h-24 md:w-32 md:h-32'>
+                                <div className='w-24 h-24 md:w-32 md:h-32 '>
                                   <Image
-                                    src='/shoki.png'
-                                    width={100}
-                                    height={100}
+                                    src={previewUrl || "/shoki.png"}
+                                    width={90}
+                                    height={90}
                                     alt='プロフィール画像'
+                                    className='rounded-full object-cover w-full h-full'
                                   />
-                                  <p>ユーザー</p>
                                 </div>
-                                <Button
-                                  size='icon'
-                                  variant='secondary'
-                                  className='absolute bottom-0 right-0 rounded-full w-8 h-8'
-                                >
-                                  <ImageIcon className='h-4 w-4' />
-                                </Button>
+                                <label className='absolute bottom-[-10px] right-[-20px] rounded-full w-8 h-8 bg-gray-200 hover:bg-gray-300 flex items-center justify-center cursor-pointer'>
+                                  <ImageIcon className='h-4 w-4 text-gray-700' />
+                                  <input
+                                    type='file'
+                                    accept='image/*'
+                                    className='hidden'
+                                    onChange={handleImageChange}
+                                  />
+                                </label>
                               </div>
                             </div>
 
@@ -200,9 +254,14 @@ export default function ProfilePage() {
                                 名前
                               </label>
                               <input
-                                id='name'
+                                {...register("username")}
                                 className='col-span-3 border-2'
                               />
+                              {errors.username && (
+                                <p className='text-red-500 text-sm'>
+                                  {errors.username.message}
+                                </p>
+                              )}
                             </div>
 
                             <div className='grid grid-cols-4 items-center gap-4'>
@@ -210,10 +269,15 @@ export default function ProfilePage() {
                                 自己紹介
                               </label>
                               <textarea
-                                id='bio'
+                                {...register("content")}
                                 className='col-span-3 border-2'
                                 rows={3}
                               />
+                              {errors.content && (
+                                <p className='text-red-500 text-sm'>
+                                  {errors.content.message}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <DialogFooter>
@@ -256,6 +320,7 @@ export default function ProfilePage() {
                       alt='User avatar'
                       width={100}
                       height={100}
+                      className='w-full h-full object-cover'
                     />
                   </div>
                   <div className='flex-1 relative'>
@@ -334,7 +399,6 @@ export default function ProfilePage() {
                             // もう一度押したら閉じる
                             setVisibleCommentPostId(null);
                           } else {
-                            await fetchComment(post.id);
                             setVisibleCommentPostId(post.id);
                           }
                         }}
@@ -345,18 +409,30 @@ export default function ProfilePage() {
                     </div>
                     {visibleCommentPostId === post.id && (
                       <div className='mt-3 border-t pt-3 space-y-2 text-sm text-gray-800 dark:text-gray-200'>
-                        {comments.length === 0 ? (
+                        {post.comment?.length === 0 ? (
                           <p>コメントはまだありません</p>
                         ) : (
-                          comments.map((comment) => (
+                          post.comment?.map((comment) => (
                             <div
                               key={comment.id}
-                              className='bg-gray-100 dark:bg-gray-700 p-2 rounded'
+                              className='bg-gray-50 dark:bg-gray-700 p-2 rounded flex items-start space-x-3'
                             >
-                              <p>{comment.content}</p>
-                              <span className='text-xs text-gray-500'>
-                                {new Date(comment.createdAt).toLocaleString()}
-                              </span>
+                              <Image
+                                src={comment.author.imageUrl || "/shoki.png"}
+                                alt='アイコン'
+                                width={32}
+                                height={32}
+                                className='rounded-full object-cover w-8 h-8'
+                              />
+                              <div>
+                                <div className='font-bold text-sm'>
+                                  {comment.author.username}
+                                </div>
+                                <p>{comment.content}</p>
+                                <span className='text-xs text-gray-500'>
+                                  {new Date(comment.createdAt).toLocaleString()}
+                                </span>
+                              </div>
                             </div>
                           ))
                         )}
