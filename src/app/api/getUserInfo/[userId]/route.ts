@@ -13,10 +13,15 @@ app.get("/api/getUserInfo/:userId", async (c) => {
     include: {
       posts: {
         include: {
+          comment:{
+            include:{
+              author:true
+            }
+          },
           _count: {
             select: {
               like: true,
-              comment: true, // ← コメント数も見たいなら追加
+              comment: true,
             },
           },
         },
