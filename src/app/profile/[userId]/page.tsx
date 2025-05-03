@@ -1,7 +1,14 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Edit, Heart, ImageIcon, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Heart,
+  ImageIcon,
+  MessageCircle,
+  Trash,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -57,9 +64,22 @@ type UserInfo = {
   };
 };
 
+type CommentType = {
+  id: string;
+  postId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+};
 export default function ProfilePage() {
   const [open, setOpen] = useState(false);
   const [userinfo, setUserInfo] = useState<UserInfo>();
+  const [openPostId, setOpenPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<CommentType[]>([]);
+
+  const [visibleCommentPostId, setVisibleCommentPostId] = useState<
+    string | null
+  >(null);
 
   const params = useParams();
   const userId = params?.userId as string;
@@ -73,6 +93,37 @@ export default function ProfilePage() {
   useEffect(() => {
     getUserInfo();
   }, [getUserInfo]);
+  const handleLike = async (postId: string) => {
+    const res = await fetch("/api/toggleLike", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, clerkId: userId }), // ← userId はすでに useParams から取得済み
+    });
+
+    const data = await res.json();
+
+    // 反映のために再取得
+    if (data.message === "Like Added" || data.message === "Like Removed") {
+      getUserInfo();
+    }
+  };
+  const handleDeletePost = async (postId: string) => {
+    const res = await fetch(`/api/delete-post/${postId}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      getUserInfo();
+    } else {
+      console.error("削除に失敗");
+    }
+  };
+
+  const fetchComment = useCallback(async (postId: string) => {
+    const res = await fetch(`/api/getComments/${postId}`);
+    const data = await res.json();
+    setComments(data);
+  }, []);
+
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
       <header className='sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700'>
@@ -207,7 +258,7 @@ export default function ProfilePage() {
                       height={100}
                     />
                   </div>
-                  <div className='flex-1'>
+                  <div className='flex-1 relative'>
                     <div className='flex items-center'>
                       <span className='font-bold text-gray-900 dark:text-white'>
                         {userinfo.username}
@@ -219,6 +270,41 @@ export default function ProfilePage() {
                     <p className='block mt-2 text-gray-800 dark:text-gray-200'>
                       {post.content}
                     </p>
+                    <Dialog
+                      open={openPostId === post.id}
+                      onOpenChange={(open) => {
+                        if (open) setOpenPostId(post.id);
+                        else setOpenPostId(null);
+                      }}
+                    >
+                      <DialogTrigger asChild>
+                        <div className='absolute top-0 right-0 text-gray-400 hover:text-red-500 transition cursor-pointer'>
+                          <Trash size={18} />
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className='sm:max-w-md'>
+                        <DialogHeader>
+                          <DialogTitle>投稿の削除</DialogTitle>
+                          <DialogDescription>
+                            この投稿を削除してもよろしいですか？この操作は元に戻せません。
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className='flex justify-end gap-2'>
+                          <Button
+                            variant='outline'
+                            onClick={() => setOpenPostId(null)}
+                          >
+                            キャンセル
+                          </Button>
+                          <Button
+                            variant='destructive'
+                            onClick={() => handleDeletePost(post.id)}
+                          >
+                            削除する
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
 
                     {post.image && (
                       <div className='mt-3 rounded-xl overflow-hidden'>
@@ -233,16 +319,49 @@ export default function ProfilePage() {
                     )}
 
                     <div className='mt-4 flex space-x-6 text-gray-500 dark:text-gray-400 text-sm'>
-                      <div className='flex items-center space-x-1 hover:text-red-500 transition'>
+                      <div
+                        className='flex items-center space-x-1 hover:text-red-500 transition'
+                        onClick={() => handleLike(post.id)}
+                      >
                         <Heart size={18} />
                         <span>{post._count.like}</span>
                       </div>
 
-                      <div className='flex items-center space-x-1 hover:text-blue-500 transition'>
+                      <div
+                        className='flex items-center space-x-1 hover:text-blue-500 transition'
+                        onClick={async () => {
+                          if (visibleCommentPostId === post.id) {
+                            // もう一度押したら閉じる
+                            setVisibleCommentPostId(null);
+                          } else {
+                            await fetchComment(post.id);
+                            setVisibleCommentPostId(post.id);
+                          }
+                        }}
+                      >
                         <MessageCircle size={18} />
                         <span>{post._count.comment}</span>
                       </div>
                     </div>
+                    {visibleCommentPostId === post.id && (
+                      <div className='mt-3 border-t pt-3 space-y-2 text-sm text-gray-800 dark:text-gray-200'>
+                        {comments.length === 0 ? (
+                          <p>コメントはまだありません</p>
+                        ) : (
+                          comments.map((comment) => (
+                            <div
+                              key={comment.id}
+                              className='bg-gray-100 dark:bg-gray-700 p-2 rounded'
+                            >
+                              <p>{comment.content}</p>
+                              <span className='text-xs text-gray-500'>
+                                {new Date(comment.createdAt).toLocaleString()}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
