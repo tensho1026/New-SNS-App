@@ -1,19 +1,12 @@
-export type Post = {
+export type Comment = {
   id: string;
   authorId: string;
   content: string;
-  image: string | null;
+  postId: string;
   createdAt: string;
-  updateAt: string;
-  user: {
+  author: {
     id: string;
     username: string;
     imageUrl: string;
   };
-  _count: {
-    comment: number;
-    like: number;
-  };
 };
-
-

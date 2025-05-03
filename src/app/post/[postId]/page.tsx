@@ -2,84 +2,23 @@
 import { CreateCommentInput, createCommentSchema } from "@/lib/schemas/comment";
 import { useUser } from "@clerk/nextjs";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Heart, MessageCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCallback } from "react";
+import { UserInfo } from "@/types/user";
+import { Post } from "@/types/post";
+import { Comment } from "@/types/comment";
+import useToggleLike from "@/lib/useToggleLIke";
+import PostDetailCard from "@/components/PostDetailCard";
+import CommentList from "@/components/CommentList";
 
-type UserInfo = {
-  username: string;
-  myself: string;
-  imageUrl: string;
-
-  posts: {
-    id: string;
-    authorId: string;
-    content: string;
-    image: string | null;
-    createdAt: string;
-    updateAt: string;
-
-    _count: {
-      like: number;
-      comment: number;
-    };
-  }[];
-
-  like: {
-    id: string;
-    postId: string;
-    authorId: string;
-    createdAt: string;
-  }[];
-
-  comment: {
-    id: string;
-    postId: string;
-    authorId: string;
-    content: string;
-    createdAt: string;
-  }[];
-
-  _count: {
-    posts: number;
-    like: number;
-  };
-};
-
-type Post = {
-  id: string;
-  authorId: string;
-  content: string;
-  image: string | null;
-  createdAt: string;
-  updateAt: string;
-  user: {
-    id: string;
-    username: string;
-    imageUrl: string;
-  };
-};
-
-type Comment = {
-  id: string;
-  authorId: string;
-  content: string;
-  postId: string;
-  createdAt: string;
-  author: {
-    id: string;
-    username: string;
-    imageUrl: string;
-  };
-};
 export default function PostDetailPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [likeCount, setLikeCount] = useState<number>(0);
   const [myUserInfo, setMyUserInfo] = useState<UserInfo | null>(null);
 
   const params = useParams();
@@ -95,27 +34,12 @@ export default function PostDetailPage() {
   } = useForm<CreateCommentFormInput>({
     resolver: zodResolver(createCommentSchema.omit({ postId: true })),
   });
-  const toggleLike = async () => {
-    const res = await fetch("/api/toggleLike", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId, clerkId: user?.id }),
-    });
+  const fetchPost = useCallback(async () => {
+    const res = await fetch(`/api/getPostById/${postId}`);
     const data = await res.json();
-
-    if (data.message === "Like Added") {
-      setLikeCount((prev) => prev + 1);
-    } else {
-      setLikeCount((prev) => prev - 1);
-    }
-    getLikes();
-  };
-
-  const getLikes = useCallback(async () => {
-    const res = await fetch(`/api/getLike/${postId}`);
-    const data = await res.json();
-    setLikeCount(data.count);
+    setPost(data);
   }, [postId]);
+  const { toggleLike } = useToggleLike(user?.id, fetchPost);
 
   const onSubmit = async (data: CreateCommentFormInput) => {
     await fetch("/api/create-comment", {
@@ -129,18 +53,8 @@ export default function PostDetailPage() {
     });
     reset();
     await fetchComment();
+    await fetchPost();
   };
-
-  useEffect(() => {
-    const fetchPost = async () => {
-      const res = await fetch(`/api/getPostById/${postId}`);
-      const data = await res.json();
-      setPost(data);
-    };
-
-    fetchPost();
-    getLikes();
-  }, [postId, getLikes]);
 
   const fetchComment = useCallback(async () => {
     const res = await fetch(`/api/getComments/${postId}`);
@@ -148,20 +62,25 @@ export default function PostDetailPage() {
     setComments(data);
   }, [postId]);
 
-  useEffect(() => {
-    fetchComment();
-  }, [fetchComment]);
-
   const fetchMyUserInfo = useCallback(async () => {
     if (!user?.id) return;
 
     const res = await fetch(`/api/getUserInfo/${user.id}`);
     const data = await res.json();
-    setMyUserInfo(data); // useState で myUserInfo を定義
+    setMyUserInfo(data);
   }, [user?.id]);
+
+  useEffect(() => {
+    fetchComment();
+  }, [fetchComment]);
+
   useEffect(() => {
     fetchMyUserInfo();
   }, [fetchMyUserInfo]);
+
+  useEffect(() => {
+    fetchPost();
+  }, [fetchPost]);
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
@@ -184,67 +103,8 @@ export default function PostDetailPage() {
       <main className='container mx-auto px-4 py-6'>
         <div className='max-w-2xl mx-auto'>
           {/* Post Detail */}
-          <div className='bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4'>
-            <div className='flex items-start space-x-3'>
-              <div className='h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'>
-                <Image
-                  src={post?.user.imageUrl || "/shoki.png"}
-                  alt='User avatar'
-                  width={100}
-                  height={100}
-                />
-              </div>
-              <div className='flex-1'>
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <div className='font-bold text-gray-900 dark:text-white'>
-                      <div className='text-sm text-gray-500 dark:text-gray-400'>
-                        <p>{post?.user.username}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <p className='mt-2 text-gray-800 dark:text-gray-200 text-lg'>
-                  {post?.content}
-                </p>
-
-                {post?.image && (
-                  <div className='mt-3 rounded-xl overflow-hidden'>
-                    <Image
-                      src={post.image}
-                      alt='投稿画像'
-                      className='w-full h-auto'
-                      width='600'
-                      height='400'
-                    />
-                  </div>
-                )}
-
-                <div className='mt-4 text-sm text-gray-500 dark:text-gray-400'>
-                  {post?.createdAt}
-                </div>
-
-                <div className='flex justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
-                  <div className='flex space-x-10'>
-                    <button
-                      className='flex items-center text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
-                      onClick={() => {
-                        toggleLike();
-                      }}
-                    >
-                      <Heart className='h-5 w-5 mr-1' />
-                      <span>{likeCount}</span>
-                    </button>
-                    <button className='flex items-center text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'>
-                      <MessageCircle className='h-5 w-5 mr-1' />
-                      <span>{comments.length}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {post && <PostDetailCard post={post} onLike={toggleLike} />}
 
           {/* Comments */}
           <div className='bg-white dark:bg-gray-800 rounded-xl shadow p-4'>
@@ -292,46 +152,7 @@ export default function PostDetailPage() {
 
             {/* Comment List */}
             <div className='space-y-4'>
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className='flex space-x-3 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0'
-                >
-                  <Link
-                    href={`/profile/${comment.author.id}`}
-                    className='h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'
-                  >
-                    <Image
-                      src={comment.author.imageUrl}
-                      alt='User avatar'
-                      width={100}
-                      height={100}
-                      className='w-full h-full object-cover'
-                    />
-                  </Link>
-                  <div className='flex-1'>
-                    <div className='flex items-center'>
-                      <Link
-                        href={`/profile/${comment.author.id}`}
-                        className='font-bold text-gray-500 dark:text-white hover:underline'
-                      >
-                        {comment.author.username}
-                      </Link>
-
-                      <span className='mx-1 text-gray-500 dark:text-gray-400'>
-                        ·
-                      </span>
-                      <span className='text-sm text-gray-500 dark:text-gray-400'>
-                        {comment.createdAt}
-                      </span>
-                    </div>
-
-                    <p className='mt-1 text-gray-800 dark:text-gray-200'>
-                      {comment.content}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              <CommentList comments={comments} />
             </div>
           </div>
         </div>
