@@ -186,28 +186,22 @@ export default function PostDetailPage() {
           {/* Post Detail */}
           <div className='bg-white dark:bg-gray-800 rounded-xl shadow p-4 mb-4'>
             <div className='flex items-start space-x-3'>
-              <Link
-                href='/profile/user1'
-                className='h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'
-              >
+              <div className='h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden'>
                 <Image
                   src={post?.user.imageUrl || "/shoki.png"}
                   alt='User avatar'
                   width={100}
                   height={100}
                 />
-              </Link>
+              </div>
               <div className='flex-1'>
                 <div className='flex items-center justify-between'>
                   <div>
-                    <Link
-                      href='/profile/user1'
-                      className='font-bold text-gray-900 dark:text-white hover:underline'
-                    >
+                    <div className='font-bold text-gray-900 dark:text-white'>
                       <div className='text-sm text-gray-500 dark:text-gray-400'>
                         <p>{post?.user.username}</p>
                       </div>
-                    </Link>
+                    </div>
                   </div>
                 </div>
 
@@ -268,7 +262,7 @@ export default function PostDetailPage() {
                       alt='User avatar'
                       width={100}
                       height={100}
-                      className="w-full h-full object-cover"
+                      className='w-full h-full object-cover'
                     />
                   </div>
                   <div className='flex-1'>
