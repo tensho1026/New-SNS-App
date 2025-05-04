@@ -12,20 +12,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { CreateProfileInput, createProfileSchema } from "@/lib/schemas/prifile";
 import { uploadImage } from "@/lib/uploadImage";
 import { useImagePreview } from "@/lib/useImagePreview";
-import { UserInfo } from "@/types/user";
 import ProfilePostCard from "@/components/ProfilePostCard";
 import useToggleLike from "@/lib/useToggleLIke";
 import useDeletePost from "@/lib/useDeletePost";
 import EditProfileDialog from "@/components/EditProfileDialog";
+import { useUserStore } from "@/store/userStore";
 
 export default function ProfilePage() {
   const [open, setOpen] = useState(false);
-  const [userinfo, setUserInfo] = useState<UserInfo>();
   const [openPostId, setOpenPostId] = useState<string | null>(null);
 
   const [visibleCommentPostId, setVisibleCommentPostId] = useState<
     string | null
   >(null);
+
+  const { userInfo, setUserInfo } = useUserStore();
 
   const params = useParams();
   const userId = params?.userId as string;
@@ -37,19 +38,17 @@ export default function ProfilePage() {
     setPreviewUrl,
   } = useImagePreview();
 
-
   const form = useForm<CreateProfileInput>({
     resolver: zodResolver(createProfileSchema),
   });
-  
+
   const { reset } = form;
-  
 
   const getUserInfo = useCallback(async () => {
     const res = await fetch(`/api/getUserInfo/${userId}`);
     const data = await res.json();
     setUserInfo(data);
-  }, [userId]);
+  }, [userId, setUserInfo]);
   const onSubmit = async (data: CreateProfileInput) => {
     let imageUrl: string | null = null;
 
@@ -71,10 +70,10 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    if (userinfo?.imageUrl && !previewUrl) {
-      setPreviewUrl(userinfo.imageUrl);
+    if (userInfo?.imageUrl && !previewUrl) {
+      setPreviewUrl(userInfo.imageUrl);
     }
-  }, [userinfo, previewUrl, setPreviewUrl]);
+  }, [userInfo, previewUrl, setPreviewUrl]);
 
   useEffect(() => {
     getUserInfo();
@@ -105,7 +104,7 @@ export default function ProfilePage() {
               <div className='flex flex-col md:flex-row gap-6 items-center md:items-start'>
                 <div className='w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden'>
                   <Image
-                    src={userinfo?.imageUrl || "/shoki.png"}
+                    src={userInfo?.imageUrl || "/shoki.png"}
                     width={100}
                     height={100}
                     alt='プロフィール画像'
@@ -115,7 +114,7 @@ export default function ProfilePage() {
 
                 <div className='flex-1 text-center md:text-left space-y-2'>
                   <div className='flex flex-col md:flex-row md:items-center gap-2 justify-between'>
-                    <h1 className='text-2xl font-bold'>{userinfo?.username}</h1>
+                    <h1 className='text-2xl font-bold'>{userInfo?.username}</h1>
                     <EditProfileDialog
                       open={open}
                       setOpen={setOpen}
@@ -126,12 +125,12 @@ export default function ProfilePage() {
                     />
                   </div>
 
-                  <p>{userinfo?.myself || "自己紹介を書きましょう"}</p>
+                  <p>{userInfo?.myself || "自己紹介を書きましょう"}</p>
 
                   <div className='flex gap-4 justify-center md:justify-start pt-2'>
                     <div>
                       <span className='font-bold'>
-                        {userinfo?._count?.posts ?? 0}
+                        {userInfo?._count?.posts ?? 0}
                       </span>
                       投稿
                     </div>
@@ -145,11 +144,11 @@ export default function ProfilePage() {
             <h2 className='text-lg font-bold text-gray-900 dark:text-white mb-4'>
               自分の投稿一覧
             </h2>
-            {userinfo?.posts.map((post) => (
+            {userInfo?.posts.map((post) => (
               <ProfilePostCard
                 key={post.id}
                 post={post}
-                userinfo={userinfo}
+                userinfo={userInfo}
                 openPostId={openPostId}
                 setOpenPostId={setOpenPostId}
                 visibleCommentPostId={visibleCommentPostId}
