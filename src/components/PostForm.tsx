@@ -59,9 +59,9 @@ export default function PostForm({ clerkId, userImageUrl }: Props) {
               <Image
                 src={userImageUrl}
                 alt='ユーザー画像'
-                width={40}
-                height={40}
-                className='rounded-full text-center'
+                width={30}
+                height={30}
+                className='w-full h-full rounded-full object-cover'
               />
             ) : (
               <div className='h-10 w-10 rounded-full bg-gray-300' />

@@ -5,9 +5,24 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import PostForm from "@/components/PostForm";
+import { useUserStore } from "@/store/userStore";
+import { useCallback, useEffect } from "react";
 
 export default function CreatePostPage() {
+  const { userInfo, setUserInfo } = useUserStore();
+
   const { user } = useUser();
+
+  const getUserInfo = useCallback(async () => {
+    const res = await fetch(`/api/getUserInfo/${user?.id}`);
+    const data = await res.json();
+    setUserInfo(data);
+  }, [user, setUserInfo]);
+
+  useEffect(() => {
+    getUserInfo();
+  }, [getUserInfo]);
+
   if (!user) return null;
 
   return (
@@ -31,7 +46,10 @@ export default function CreatePostPage() {
 
       {/* Main Content */}
       <main className='container mx-auto px-4 py-6'>
-        <PostForm  clerkId={user.id} userImageUrl={user.imageUrl}/>
+        <PostForm
+          clerkId={user.id}
+          userImageUrl={userInfo?.imageUrl || "/shoki.png"}
+        />
       </main>
     </div>
   );
