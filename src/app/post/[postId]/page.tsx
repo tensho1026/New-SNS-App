@@ -5,18 +5,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCallback } from "react";
-import { UserInfo } from "@/types/user";
 import { Post } from "@/types/post";
 import { Comment } from "@/types/comment";
 import useToggleLike from "@/lib/useToggleLIke";
 import PostDetailCard from "@/components/PostDetailCard";
 import CommentList from "@/components/CommentList";
 import CommentForm from "@/components/CommentForm";
+import { useUserStore } from "@/store/userStore";
 
 export default function PostDetailPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [myUserInfo, setMyUserInfo] = useState<UserInfo | null>(null);
+  const { userInfo, setUserInfo } = useUserStore();
 
   const params = useParams();
   const postId = params?.postId as string;
@@ -40,8 +40,8 @@ export default function PostDetailPage() {
 
     const res = await fetch(`/api/getUserInfo/${user.id}`);
     const data = await res.json();
-    setMyUserInfo(data);
-  }, [user?.id]);
+    setUserInfo(data);
+  }, [user?.id,setUserInfo]);
 
   useEffect(() => {
     fetchComment();
@@ -87,11 +87,11 @@ export default function PostDetailPage() {
 
             {/* Comment Input */}
             <div className='flex space-x-3 mb-6'>
-              {myUserInfo && (
+              {userInfo && (
                 <CommentForm
                   postId={postId}
                   clerkId={user?.id ?? ""}
-                  myUserInfo={myUserInfo}
+                  myUserInfo={userInfo}
                   fetchComment={fetchComment}
                   fetchPost={fetchPost}
                 />

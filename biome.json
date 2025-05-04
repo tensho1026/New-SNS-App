@@ -1,6 +1,14 @@
 {
-	"files": {
-		"ignoreUnknown": false,
-		"ignore": ["node_modules", ".next", ".vercel", ".turbo"]
-	}
+  "files": {
+    "include": ["**/*.ts", "**/*.tsx"],
+    "ignore": [
+      "node_modules",
+      ".next",
+      ".vercel",
+      ".turbo",
+      "public",
+      "dist",
+      "coverage"
+    ]
+  }
 }
