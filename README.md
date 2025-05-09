@@ -17,3 +17,4 @@ SNS風の投稿アプリ。ユーザーは画像付きの投稿プロフィー�
 - Prisma（ORM）
 - Zustand（状態管理）
 - React Hook Form + Zod（バリデーション）
+- Hono(api作成)
